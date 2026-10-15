@@ -8,7 +8,7 @@ GitOps Kustomize manifests to deploy **Red Hat Ansible Automation Platform (AAP)
 |------|-------------|
 | [`ansible/`](ansible/) | AAP operator + `AnsibleAutomationPlatform` instance |
 | [`ansible/README.md`](ansible/README.md) | Deploy steps, overlays, layout, and troubleshooting for AAP |
-| [`argoCD/`](argoCD/) | AppProject `appansible` + Applications for operator and instance |
+| [`argoCD/`](argoCD/) | AppProject `appansible`, Applications, and AAP RBAC for the GitOps controller |
 
 ## Quick start
 
