@@ -13,16 +13,17 @@ spec:
     disabled: false
   eda:
     disabled: false
+  # Hub: disabled in base (lab uses RWO thin-csi; Hub file storage needs RWX).
+  # Enable via overlay only with RWX StorageClass or storage_type: S3 / azure.
   hub:
-    disabled: false
-    # Patch file_storage_storage_class in overlays to a ReadWriteMany StorageClass
+    disabled: true
     storage_type: file
     file_storage_storage_class: patch-me-see-overlays-dir
     file_storage_size: 10Gi
-    ## Uncomment if using S3 storage for Hub content
+    ## S3 example (also set disabled: false in the overlay):
     # storage_type: S3
-    # object_storage_s3_secret: example-galaxy-object-storage
-    ## Uncomment if using Azure storage for Hub content
+    # object_storage_s3_secret: aap-hub-s3
+    ## Azure example:
     # storage_type: azure
     # object_storage_azure_secret: azure-secret-name
   lightspeed:

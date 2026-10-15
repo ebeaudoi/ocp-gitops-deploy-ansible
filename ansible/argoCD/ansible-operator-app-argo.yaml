@@ -27,3 +27,10 @@ spec:
         duration: 30s
         factor: 2
         maxDuration: 5m
+  # OLM mutates Subscription (status, startingCSV, etc.)
+  ignoreDifferences:
+    - group: operators.coreos.com
+      kind: Subscription
+      jsonPointers:
+        - /status
+        - /spec/startingCSV

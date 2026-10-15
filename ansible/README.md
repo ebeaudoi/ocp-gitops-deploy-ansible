@@ -5,7 +5,7 @@ Kustomize manifests for the AAP operator and `AnsibleAutomationPlatform` instanc
 ## Purpose
 
 Install AAP on an OpenShift cluster: operator → unified platform instance
-(controller, EDA, hub; lightspeed disabled).
+(controller + EDA; Hub disabled in lab; lightspeed disabled).
 
 ## Overlay
 
@@ -28,7 +28,7 @@ Hub is **disabled** in the lab overlay: `thin-csi` is RWO, and Hub file storage 
 | Path | Role |
 |------|------|
 | `operator/` | Namespace, OperatorGroup, Subscription |
-| `instance/` | `AnsibleAutomationPlatform` CR (controller + EDA + hub) |
+| `instance/` | `AnsibleAutomationPlatform` CR (controller + EDA; Hub disabled in lab) |
 | `overlays/lab/` | Umbrella (day-2 re-apply only; first install apply operator then instance) |
 | `argoCD/` | AppProject `appansible`, Applications, and AAP RBAC for the GitOps controller |
 
