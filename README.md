@@ -8,7 +8,8 @@ GitOps Kustomize manifests to deploy **Red Hat Ansible Automation Platform (AAP)
 |------|-------------|
 | [`ansible/`](ansible/) | AAP operator + `AnsibleAutomationPlatform` instance |
 | [`ansible/README.md`](ansible/README.md) | Deploy steps, overlays, layout, and troubleshooting for AAP |
-| [`argoCD/`](argoCD/) | AppProject `appansible`, Applications, and AAP RBAC for the GitOps controller |
+| [`ansible/update-values.sh`](ansible/update-values.sh) | Patch operator/instance overlay channels, catalogs, and Hub settings |
+| [`ansible/argoCD/`](ansible/argoCD/) | AppProject `appansible`, Applications, and AAP RBAC for the GitOps controller |
 
 ## Quick start
 
@@ -26,7 +27,7 @@ oc apply -k ansible/instance/overlays/${OVERLAY}/
 Via Argo CD (project + apps):
 
 ```bash
-oc apply -k argoCD/
+oc apply -k ansible/argoCD/
 ```
 
 See [`ansible/README.md`](ansible/README.md) for full details.

@@ -9,6 +9,11 @@ patches:
       kind: AnsibleAutomationPlatform
       name: aap
     patch: |-
+      # thin-csi is RWO; Hub file storage requires RWX. Disable Hub until
+      # an RWX StorageClass or object storage (S3/Azure) is available.
+      - op: replace
+        path: /spec/hub/disabled
+        value: true
       - op: replace
         path: /spec/hub/file_storage_storage_class
-        value: ocs-storagecluster-cephfs
+        value: thin-csi

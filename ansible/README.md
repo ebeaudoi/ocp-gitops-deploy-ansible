@@ -14,7 +14,15 @@ Install AAP on an OpenShift cluster: operator → unified platform instance
 | `*/overlays/connected` | `redhat-operators` | Automatic | `stable-2.7` |
 | `*/overlays/airgapped` | `ebdn-redhat-operators` | Manual | `stable-2.7` |
 
-Edit channel / catalog / hub `file_storage_storage_class` in the overlays to match your environment.
+Edit values with [`update-values.sh`](update-values.sh) (preferred), or edit the overlay files directly.
+
+```bash
+cd ansible
+vim update-values.sh    # set channel / catalog / Hub options
+./update-values.sh       # patches overlays only — does not deploy
+```
+
+Hub is **disabled** in overlays: `thin-csi` is RWO, and Hub file storage needs RWX. Re-enable Hub when you have an RWX StorageClass or configure `storage_type: S3` / Azure.
 
 ## What each folder does
 
@@ -23,12 +31,14 @@ Edit channel / catalog / hub `file_storage_storage_class` in the overlays to mat
 | `operator/` | Namespace, OperatorGroup, Subscription |
 | `instance/` | `AnsibleAutomationPlatform` CR (controller + EDA + hub) |
 | `overlays/{connected,airgapped}/` | Umbrella (day-2 re-apply only; first install apply operator then instance) |
+| `argoCD/` | AppProject `appansible`, Applications, and AAP RBAC for the GitOps controller |
 
 ## Prerequisites
 
 - OpenShift 4.x, cluster-admin, `oc`
 - Infra nodes (`node-role.kubernetes.io/infra`) for Subscription / namespace / CR placement
-- A ReadWriteMany StorageClass for Automation Hub (default overlay value: `ocs-storagecluster-cephfs`)
+- Default StorageClass `thin-csi` (RWO) for controller/EDA Postgres PVCs
+- RWX StorageClass or object storage if you enable Automation Hub
 
 ## Manual apply
 
@@ -48,6 +58,12 @@ Day-2 full stack (CRDs already present):
 oc apply -k overlays/${OVERLAY}/
 ```
 
+Via Argo CD (project + apps + controller RBAC):
+
+```bash
+oc apply -k argoCD/
+```
+
 ## Retrieve admin password
 
 ```bash
@@ -59,11 +75,11 @@ oc get secret aap-admin-password -n ansible-automation-platform \
 
 ```
 ansible/
+├── argoCD/                             # AppProject + Applications + AAP RBAC
 ├── overlays/{connected,airgapped}/     # umbrella (operator + instance)
 ├── operator/
 │   ├── base/
 │   └── overlays/{connected,airgapped}/
-
 └── instance/
     ├── base/
     └── overlays/{connected,airgapped}/
