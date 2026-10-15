@@ -4,6 +4,7 @@
 #
 # This script ONLY edits overlay kustomization.yaml files.
 # It does NOT deploy anything to the cluster.
+# It does NOT create the S3 credentials Secret (create that with oc separately).
 #
 # HOW TO USE
 #   1. Edit the VARIABLES section below (values you want applied).
@@ -17,7 +18,9 @@
 #     - CatalogSource name
 #   instance/overlays/lab/kustomization.yaml
 #     - Hub disabled (true/false)
-#     - Hub file storage StorageClass (used when Hub uses storage_type: file)
+#     - Hub storage_type (file | S3)
+#     - Hub file StorageClass (when storage_type=file)
+#     - Hub S3 Secret name (when storage_type=S3)
 #
 # Backups are written next to each file as: kustomization.yaml.YYYYMMDD-HHMM
 ##############################################################################
@@ -30,16 +33,42 @@ cd "${SCRIPT_DIR}"
 # VARIABLES — edit these, then run the script
 ###############################################################################
 
+# -----------------------------------------------------------------------------
 # Operator Subscription (operator/overlays/lab/)
+# -----------------------------------------------------------------------------
 CHANNEL="stable-2.7"
 CATALOG_SOURCE="redhat-operators"
 
-# Hub settings (instance/overlays/lab/)
-# Hub file storage needs ReadWriteMany (RWX). thin-csi is RWO, so Hub is
-# disabled by default. Set HUB_DISABLED=false only when you have RWX storage
-# or switch the CR to S3 (see ansible/README.md).
+# -----------------------------------------------------------------------------
+# Hub (instance/overlays/lab/)
+#
+# storage_type:
+#   file  — needs a ReadWriteMany (RWX) StorageClass (thin-csi is RWO → keep Hub disabled)
+#   S3    — needs a Secret in ansible-automation-platform (see below); no RWX required
+#
+# To enable Hub with S3:
+#   HUB_DISABLED="false"
+#   HUB_STORAGE_TYPE="S3"
+#   HUB_S3_SECRET="aap-hub-s3"   # must match an existing Secret in the AAP namespace
+#
+# Create the Secret once (not managed by this script), for example:
+#   oc -n ansible-automation-platform apply -f- <<EOF
+#   apiVersion: v1
+#   kind: Secret
+#   metadata:
+#     name: aap-hub-s3
+#   stringData:
+#     s3-access-key-id: <ACCESS_KEY>
+#     s3-secret-access-key: <SECRET_KEY>
+#     s3-bucket-name: <BUCKET>
+#     s3-region: <REGION>                 # AWS
+#     # s3-endpoint: https://minio.example/  # S3-compatible (MinIO, etc.)
+#   EOF
+# -----------------------------------------------------------------------------
 HUB_DISABLED="true"
-HUB_FILE_STORAGE_CLASS="thin-csi"
+HUB_STORAGE_TYPE="file"              # file | S3
+HUB_FILE_STORAGE_CLASS="thin-csi"    # used when HUB_STORAGE_TYPE=file
+HUB_S3_SECRET="aap-hub-s3"           # used when HUB_STORAGE_TYPE=S3
 
 ###############################################################################
 # Helpers (do not edit below)
@@ -86,6 +115,26 @@ backup_file() {
   echo "  Backup: ${file}.${BACKUP_SUFFIX}"
 }
 
+validate_hub_settings() {
+  case "${HUB_STORAGE_TYPE}" in
+    file|S3) ;;
+    *)
+      echo "ERROR: HUB_STORAGE_TYPE must be 'file' or 'S3' (got: ${HUB_STORAGE_TYPE})"
+      exit 1
+      ;;
+  esac
+
+  if [[ "${HUB_DISABLED}" == "false" && "${HUB_STORAGE_TYPE}" == "file" && "${HUB_FILE_STORAGE_CLASS}" == "thin-csi" ]]; then
+    echo "WARNING: Hub enabled with storage_type=file and thin-csi (RWO)."
+    echo "         Hub file storage needs RWX, or set HUB_STORAGE_TYPE=S3."
+  fi
+
+  if [[ "${HUB_DISABLED}" == "false" && "${HUB_STORAGE_TYPE}" == "S3" && -z "${HUB_S3_SECRET}" ]]; then
+    echo "ERROR: HUB_STORAGE_TYPE=S3 requires HUB_S3_SECRET (Kubernetes Secret name)."
+    exit 1
+  fi
+}
+
 ###############################################################################
 # Run
 ###############################################################################
@@ -94,6 +143,8 @@ echo "AAP update-values.sh  (lab overlay)"
 echo "  Patches overlays only — does not deploy"
 echo "  Backup suffix = .${BACKUP_SUFFIX}"
 echo "=========================================="
+
+validate_hub_settings
 
 echo ""
 echo "------------------------------------------"
@@ -114,18 +165,30 @@ echo "------------------------------------------"
 echo "[Instance / lab]"
 echo "  File:              ${INSTANCE_OVERLAY}"
 echo "  Hub disabled:      ${HUB_DISABLED}"
-echo "  Hub storage class: ${HUB_FILE_STORAGE_CLASS}"
+echo "  Hub storage_type:  ${HUB_STORAGE_TYPE}"
+echo "  Hub file SC:       ${HUB_FILE_STORAGE_CLASS}"
+echo "  Hub S3 Secret:     ${HUB_S3_SECRET}"
 echo "------------------------------------------"
 backup_file "${INSTANCE_OVERLAY}"
 replace_json6902_value "${INSTANCE_OVERLAY}" "/spec/hub/disabled" "${HUB_DISABLED}"
 echo "    Updated hub.disabled → ${HUB_DISABLED}"
+replace_json6902_value "${INSTANCE_OVERLAY}" "/spec/hub/storage_type" "${HUB_STORAGE_TYPE}"
+echo "    Updated hub.storage_type → ${HUB_STORAGE_TYPE}"
 replace_json6902_value "${INSTANCE_OVERLAY}" "/spec/hub/file_storage_storage_class" "${HUB_FILE_STORAGE_CLASS}"
 echo "    Updated hub.file_storage_storage_class → ${HUB_FILE_STORAGE_CLASS}"
+replace_json6902_value "${INSTANCE_OVERLAY}" "/spec/hub/object_storage_s3_secret" "${HUB_S3_SECRET}"
+echo "    Updated hub.object_storage_s3_secret → ${HUB_S3_SECRET}"
 echo "    Done."
 
 echo ""
 echo "=========================================="
 echo "Update completed."
+if [[ "${HUB_STORAGE_TYPE}" == "S3" && "${HUB_DISABLED}" == "false" ]]; then
+  echo ""
+  echo "Remember: create Secret '${HUB_S3_SECRET}' in ansible-automation-platform"
+  echo "before syncing the instance (keys: s3-access-key-id, s3-secret-access-key,"
+  echo "s3-bucket-name, and s3-region or s3-endpoint)."
+fi
 echo ""
 echo "Next steps (pick one):"
 echo "  Manual:   oc apply -k operator/overlays/lab/"

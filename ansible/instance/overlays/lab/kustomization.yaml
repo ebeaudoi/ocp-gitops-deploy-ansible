@@ -9,11 +9,17 @@ patches:
       kind: AnsibleAutomationPlatform
       name: aap
     patch: |-
-      # thin-csi is RWO; Hub file storage requires RWX. Disable Hub until
-      # an RWX StorageClass or object storage (S3/Azure) is available.
+      # Hub storage: use storage_type file (needs RWX class) or S3 (needs Secret).
+      # Edit via ansible/update-values.sh — do not leave Hub enabled on thin-csi/file.
       - op: replace
         path: /spec/hub/disabled
         value: true
       - op: replace
+        path: /spec/hub/storage_type
+        value: file
+      - op: replace
         path: /spec/hub/file_storage_storage_class
         value: thin-csi
+      - op: replace
+        path: /spec/hub/object_storage_s3_secret
+        value: aap-hub-s3

@@ -14,18 +14,14 @@ spec:
   eda:
     disabled: false
   # Hub: disabled in base (lab uses RWO thin-csi; Hub file storage needs RWX).
-  # Enable via overlay only with RWX StorageClass or storage_type: S3 / azure.
+  # Overlay / update-values.sh sets storage_type (file|S3) and related fields.
   hub:
     disabled: true
     storage_type: file
     file_storage_storage_class: patch-me-see-overlays-dir
     file_storage_size: 10Gi
-    ## S3 example (also set disabled: false in the overlay):
-    # storage_type: S3
-    # object_storage_s3_secret: aap-hub-s3
-    ## Azure example:
-    # storage_type: azure
-    # object_storage_azure_secret: azure-secret-name
+    # Required when storage_type is S3 (Secret created out-of-band in this namespace)
+    object_storage_s3_secret: patch-me-see-overlays-dir
   lightspeed:
     disabled: true
 

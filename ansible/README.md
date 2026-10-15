@@ -21,7 +21,17 @@ vim update-values.sh    # set channel / catalog / Hub options
 ./update-values.sh       # patches overlays only — does not deploy
 ```
 
-Hub is **disabled** in the lab overlay: `thin-csi` is RWO, and Hub file storage needs RWX. Re-enable Hub when you have an RWX StorageClass or configure `storage_type: S3` / Azure.
+Hub is **disabled** in the lab overlay: `thin-csi` is RWO, and Hub file storage needs RWX.
+
+To enable Hub with **S3**, edit `update-values.sh`:
+
+```bash
+HUB_DISABLED="false"
+HUB_STORAGE_TYPE="S3"
+HUB_S3_SECRET="aap-hub-s3"   # create this Secret in ansible-automation-platform first
+```
+
+Then run `./update-values.sh`. The Secret is **not** created by the script (credentials stay out of git).
 
 ## What each folder does
 
