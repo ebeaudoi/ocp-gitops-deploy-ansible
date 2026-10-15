@@ -1,0 +1,21 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: ansible-automation-platform
+  namespace: ansible-automation-platform
+spec:
+  channel: patch-me-see-overlays-dir
+  installPlanApproval: Automatic
+  name: ansible-automation-platform-operator
+  source: patch-me-see-overlays-dir
+  sourceNamespace: openshift-marketplace
+  config:
+    nodeSelector:
+      node-role.kubernetes.io/infra: ""
+    tolerations:
+      - operator: Exists
+        effect: NoSchedule
+        key: node-role.kubernetes.io/infra
+      - operator: Exists
+        effect: NoExecute
+        key: node-role.kubernetes.io/infra

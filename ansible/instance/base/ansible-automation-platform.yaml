@@ -1,0 +1,40 @@
+apiVersion: aap.ansible.com/v1alpha1
+kind: AnsibleAutomationPlatform
+metadata:
+  name: aap
+  namespace: ansible-automation-platform
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  image_pull_policy: IfNotPresent
+
+  # Components
+  controller:
+    disabled: false
+  eda:
+    disabled: false
+  hub:
+    disabled: false
+    # Patch file_storage_storage_class in overlays to a ReadWriteMany StorageClass
+    storage_type: file
+    file_storage_storage_class: patch-me-see-overlays-dir
+    file_storage_size: 10Gi
+    ## Uncomment if using S3 storage for Hub content
+    # storage_type: S3
+    # object_storage_s3_secret: example-galaxy-object-storage
+    ## Uncomment if using Azure storage for Hub content
+    # storage_type: azure
+    # object_storage_azure_secret: azure-secret-name
+  lightspeed:
+    disabled: true
+
+  # Schedule platform workloads on infra nodes
+  node_selector:
+    node-role.kubernetes.io/infra: ""
+  tolerations:
+    - key: node-role.kubernetes.io/infra
+      operator: Exists
+      effect: NoSchedule
+    - key: node-role.kubernetes.io/infra
+      operator: Exists
+      effect: NoExecute

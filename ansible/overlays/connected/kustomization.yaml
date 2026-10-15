@@ -1,0 +1,17 @@
+# Full AAP stack for connected clusters: operator + AnsibleAutomationPlatform instance.
+#
+# First-time install: apply operator, wait for CSV Succeeded, then apply instance
+# (CRDs appear only after the operator is ready). Day-2 re-apply can use this umbrella.
+#
+#   oc apply -k ansible/operator/overlays/connected/
+#   oc wait csv -n ansible-automation-platform -l operators.coreos.com/ansible-automation-platform-operator.ansible-automation-platform --for=jsonpath='{.status.phase}'=Succeeded --timeout=600s
+#   oc apply -k ansible/instance/overlays/connected/
+#
+# Or day-2:
+#   oc apply -k ansible/overlays/connected/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../operator/overlays/connected
+  - ../../instance/overlays/connected
