@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ../../base
+  - hub-s3-secret.yaml
 
 patches:
   - target:

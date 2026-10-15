@@ -28,10 +28,17 @@ To enable Hub with **S3**, edit `update-values.sh`:
 ```bash
 HUB_DISABLED="false"
 HUB_STORAGE_TYPE="S3"
-HUB_S3_SECRET="aap-hub-s3"   # create this Secret in ansible-automation-platform first
+HUB_S3_SECRET="aap-hub-s3"
+S3_ACCESS_KEY_ID="..."
+S3_SECRET_ACCESS_KEY="..."
+S3_BUCKET_NAME="..."
+S3_REGION="us-east-1"          # AWS
+# and/or:
+S3_ENDPOINT="https://minio.example/"   # S3-compatible
 ```
 
-Then run `./update-values.sh`. The Secret is **not** created by the script (credentials stay out of git).
+Then run `./update-values.sh`. That patches `instance/overlays/lab/hub-s3-secret.yaml`
+(all `s3-*` keys) and the CR `object_storage_s3_secret` name. Do not commit real credentials.
 
 ## What each folder does
 
