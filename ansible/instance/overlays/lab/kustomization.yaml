@@ -14,10 +14,10 @@ patches:
       # Edit via ansible/update-values.sh — do not leave Hub enabled on thin-csi/file.
       - op: replace
         path: /spec/hub/disabled
-        value: true
+        value: false
       - op: replace
         path: /spec/hub/storage_type
-        value: file
+        value: S3
       - op: replace
         path: /spec/hub/file_storage_storage_class
         value: thin-csi

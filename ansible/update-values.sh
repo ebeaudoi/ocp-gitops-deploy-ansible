@@ -57,8 +57,8 @@ CATALOG_SOURCE="redhat-operators"
 #   HUB_STORAGE_TYPE="S3"
 #   fill in all S3_* values (and HUB_S3_SECRET name)
 # -----------------------------------------------------------------------------
-HUB_DISABLED="true"
-HUB_STORAGE_TYPE="file"              # file | S3
+HUB_DISABLED="false"
+HUB_STORAGE_TYPE="S3"              # file | S3
 HUB_FILE_STORAGE_CLASS="thin-csi"    # used when HUB_STORAGE_TYPE=file
 HUB_S3_SECRET="aap-hub-s3"           # Secret name + object_storage_s3_secret
 
@@ -69,11 +69,12 @@ HUB_S3_SECRET="aap-hub-s3"           # Secret name + object_storage_s3_secret
 # AWS: set S3_REGION; leave S3_ENDPOINT as CHANGE_ME or empty if unused.
 # S3-compatible (MinIO, etc.): set S3_ENDPOINT to the API URL.
 # -----------------------------------------------------------------------------
-S3_ACCESS_KEY_ID="CHANGE_ME"
-S3_SECRET_ACCESS_KEY="CHANGE_ME"
-S3_BUCKET_NAME="CHANGE_ME"
-S3_REGION="CHANGE_ME"
-S3_ENDPOINT="CHANGE_ME"
+S3_ACCESS_KEY_ID="s4admin"
+S3_SECRET_ACCESS_KEY="s4secret"
+S3_BUCKET_NAME="aap-hub-s3"
+# S3-compatible (S4/MinIO): use a dummy region + full URL for the endpoint
+S3_REGION="us-east-1"
+S3_ENDPOINT="http://s4.s4.svc:7480"
 
 ###############################################################################
 # Helpers (do not edit below)
