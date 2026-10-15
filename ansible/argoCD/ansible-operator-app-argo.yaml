@@ -11,7 +11,7 @@ spec:
     server: https://kubernetes.default.svc
   project: appansible
   source:
-    path: ansible/operator/overlays/connected
+    path: ansible/operator/overlays/lab
     repoURL: https://github.com/ebeaudoi/ocp-gitops-deploy-ansible.git
     targetRevision: HEAD
   syncPolicy:
