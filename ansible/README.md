@@ -162,6 +162,8 @@ oc apply -k argoCD/
 
 Argo marks OutOfSync when **live cluster state ≠ desired state from Git**.
 
+**Sync then immediately OutOfSync on `node_selector` / `tolerations`:** those fields are **not** valid at top-level `spec` on `AnsibleAutomationPlatform`. The operator strips them after reconcile. Put scheduling under `spec.controller` / `eda` / `hub` (string block scalars) and `spec.api` / `redis` / `database` (native maps/lists). The namespace already has `openshift.io/node-selector` and default tolerations for infra.
+
 **1. See which resources differ**
 
 ```bash

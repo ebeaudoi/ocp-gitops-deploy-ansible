@@ -8,11 +8,72 @@ metadata:
 spec:
   image_pull_policy: IfNotPresent
 
-  # Components
+  # Platform pods (native object/list types on the AAP CR)
+  api:
+    node_selector:
+      node-role.kubernetes.io/infra: ""
+    tolerations:
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoExecute
+  redis:
+    node_selector:
+      node-role.kubernetes.io/infra: ""
+    tolerations:
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoExecute
+  database:
+    node_selector:
+      node-role.kubernetes.io/infra: ""
+    tolerations:
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoExecute
+
+  # Components — controller/eda/hub child CRDs type node_selector/tolerations as strings
+  # (YAML block scalars). Do NOT set these at top-level spec; the operator strips them
+  # and Argo will flap OutOfSync.
   controller:
     disabled: false
+    node_selector: |
+      node-role.kubernetes.io/infra: ""
+    tolerations: |
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoExecute
+    postgres_selector: |
+      node-role.kubernetes.io/infra: ""
+    postgres_tolerations: |
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoExecute
   eda:
     disabled: false
+    node_selector: |
+      node-role.kubernetes.io/infra: ""
+    tolerations: |
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoExecute
   # Hub: disabled in base (lab uses RWO thin-csi; Hub file storage needs RWX).
   # Overlay / update-values.sh sets storage_type (file|S3) and related fields.
   hub:
@@ -22,16 +83,14 @@ spec:
     file_storage_size: 10Gi
     # Required when storage_type is S3 (Secret created out-of-band in this namespace)
     object_storage_s3_secret: patch-me-see-overlays-dir
+    node_selector: |
+      node-role.kubernetes.io/infra: ""
+    tolerations: |
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/infra
+        operator: Exists
+        effect: NoExecute
   lightspeed:
     disabled: true
-
-  # Schedule platform workloads on infra nodes
-  node_selector:
-    node-role.kubernetes.io/infra: ""
-  tolerations:
-    - key: node-role.kubernetes.io/infra
-      operator: Exists
-      effect: NoSchedule
-    - key: node-role.kubernetes.io/infra
-      operator: Exists
-      effect: NoExecute
