@@ -8,7 +8,7 @@ GitOps Kustomize manifests to deploy **Red Hat Ansible Automation Platform (AAP)
 |------|-------------|
 | [`ansible/`](ansible/) | AAP operator + `AnsibleAutomationPlatform` instance |
 | [`ansible/README.md`](ansible/README.md) | Deploy steps, overlays, layout, and troubleshooting for AAP |
-| [`ansible/update-values.sh`](ansible/update-values.sh) | Patch lab overlay channels, catalogs, and Hub settings |
+| [`ansible/update-values.sh`](ansible/update-values.sh) | Patch channel, catalog, infra, Hub (file/S3), Lightspeed, S3 secret |
 | [`ansible/validate-s3.sh`](ansible/validate-s3.sh) | CLI probe for Hub S3 endpoint/credentials/bucket |
 | [`ansible/s3-validate/`](ansible/s3-validate/) | OpenShift Job to test Hub S3 (manual `oc apply`; not in `argoCD/`) |
 | [`ansible/argoCD/`](ansible/argoCD/) | AppProject `appansible`, operator/instance Applications, and AAP RBAC |

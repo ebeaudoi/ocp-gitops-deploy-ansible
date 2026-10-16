@@ -22,5 +22,11 @@ patches:
         path: /spec/hub/file_storage_storage_class
         value: thin-csi
       - op: replace
+        path: /spec/hub/file_storage_size
+        value: 10Gi
+      - op: replace
         path: /spec/hub/object_storage_s3_secret
         value: aap-hub-s3
+      - op: replace
+        path: /spec/lightspeed/disabled
+        value: true

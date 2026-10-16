@@ -5,7 +5,7 @@ Kustomize manifests for the AAP operator and `AnsibleAutomationPlatform` instanc
 ## Purpose
 
 Install AAP on an OpenShift cluster: operator → unified platform instance
-(controller + EDA; Hub disabled in lab; lightspeed disabled).
+(controller + EDA; Hub via file/RWX or S3 — see below).
 
 ## Overlay
 
@@ -17,15 +17,61 @@ Edit values with [`update-values.sh`](update-values.sh) (preferred), or edit the
 
 ```bash
 cd ansible
-vim update-values.sh    # set channel / catalog / Hub options
-./update-values.sh       # patches overlays only — does not deploy
+vim update-values.sh    # set channel / catalog / Hub / infra / Lightspeed options
+./update-values.sh       # patches overlays/base YAML only — does not deploy
 ```
 
-Hub is **disabled** in the lab overlay: `thin-csi` is RWO, and Hub file storage needs RWX.
-
-To enable Hub with **S3**, edit `update-values.sh`:
+**Infra node placement** (Namespace + Subscription + AAP CR):
 
 ```bash
+INFRA_NODE_KEY="node-role.kubernetes.io/infra"
+INFRA_NODE_VALUE=""
+INFRA_TOLERATION_EFFECTS="NoSchedule,NoExecute"
+```
+
+### Automation Hub storage
+
+Hub needs either **file** (RWX PVC) or **S3** object storage. The default lab
+StorageClass `thin-csi` is **RWO** and cannot back Hub file storage.
+
+List StorageClasses and pick one with `RWX` (or use S3):
+
+```bash
+oc get storageclass
+# Look for something like ocs-storagecluster-cephfs, nfs-*, or another RWX class
+```
+
+#### Hub with file (RWX)
+
+```bash
+# in update-values.sh:
+HUB_DISABLED="false"
+HUB_STORAGE_TYPE="file"
+HUB_FILE_STORAGE_CLASS="ocs-storagecluster-cephfs"   # must be RWX — not thin-csi
+HUB_FILE_STORAGE_SIZE="10Gi"
+```
+
+Then:
+
+```bash
+./update-values.sh
+# deploy / sync instance as usual
+```
+
+That sets on the AAP CR:
+
+- `spec.hub.disabled: false`
+- `spec.hub.storage_type: file`
+- `spec.hub.file_storage_storage_class`
+- `spec.hub.file_storage_size`
+
+The script **refuses** Hub+file with `thin-csi` (RWO). If you have no RWX class,
+use S3 instead (below).
+
+#### Hub with S3
+
+```bash
+# in update-values.sh:
 HUB_DISABLED="false"
 HUB_STORAGE_TYPE="S3"
 HUB_S3_SECRET="aap-hub-s3"
@@ -37,8 +83,15 @@ S3_REGION="us-east-1"          # AWS
 S3_ENDPOINT="https://minio.example/"   # S3-compatible
 ```
 
-Then run `./update-values.sh`. That patches `instance/overlays/lab/hub-s3-secret.yaml`
-(all `s3-*` keys) and the CR `object_storage_s3_secret` name. Do not commit real credentials.
+Then run `./update-values.sh`. That patches the lab CR overlay (Hub + Lightspeed),
+`hub-s3-secret.yaml` (all `s3-*` keys), and `object_storage_s3_secret`.
+Do not commit real credentials. Validate S3 before deploy (next section).
+
+Lightspeed (either storage mode):
+
+```bash
+LIGHTSPEED_DISABLED="true"     # false to enable Ansible Lightspeed
+```
 
 **Validate S3 before deploy**
 
@@ -87,7 +140,7 @@ oc delete secret aap-hub-s3 -n s4 --ignore-not-found
 - OpenShift 4.x, cluster-admin, `oc`
 - Infra nodes (`node-role.kubernetes.io/infra`) for Subscription / namespace / CR placement
 - Default StorageClass `thin-csi` (RWO) for controller/EDA Postgres PVCs
-- RWX StorageClass or object storage if you enable Automation Hub
+- Hub **file** mode: an RWX StorageClass (`HUB_FILE_STORAGE_CLASS`); or Hub **S3** mode (credentials in `update-values.sh`)
 
 ## Manual apply
 
