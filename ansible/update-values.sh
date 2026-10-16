@@ -18,12 +18,8 @@
 #   instance/overlays/lab/kustomization.yaml
 #     - Hub disabled / storage_type / file StorageClass / S3 Secret name
 #   instance/overlays/lab/hub-s3-secret.yaml
-#     - Secret name
-#     - s3-access-key-id
-#     - s3-secret-access-key
-#     - s3-bucket-name
-#     - s3-region
-#     - s3-endpoint
+#   s3-validate/overlays/lab/hub-s3-secret.yaml
+#     - Secret name + all s3-* keys (kept in sync for AAP Hub + validate Job)
 #
 # WARNING: Do not commit real S3 credentials. Prefer placeholders in git and
 #          apply secrets out-of-band, or keep credentials in a private overlay.
@@ -74,8 +70,8 @@ S3_SECRET_ACCESS_KEY="s4secret"
 S3_BUCKET_NAME="aap-hub-s3"
 # S3-compatible (S4/MinIO): use a dummy region + full URL for the endpoint
 S3_REGION="us-east-1"
+#S3_ENDPOINT="https://s3.s4.apps.ebdn-rd3.ebeaudoi.tamlab.rdu2.redhat.com"
 S3_ENDPOINT="http://s4.s4.svc:7480"
-
 ###############################################################################
 # Helpers (do not edit below)
 ###############################################################################
@@ -83,7 +79,11 @@ BACKUP_SUFFIX="$(date +%Y%m%d-%H%M)"
 
 OPERATOR_OVERLAY="operator/overlays/lab/kustomization.yaml"
 INSTANCE_OVERLAY="instance/overlays/lab/kustomization.yaml"
-HUB_S3_SECRET_FILE="instance/overlays/lab/hub-s3-secret.yaml"
+# Instance (AAP Hub) + s3-validate Job share the same credential values
+HUB_S3_SECRET_FILES=(
+  "instance/overlays/lab/hub-s3-secret.yaml"
+  "s3-validate/overlays/lab/hub-s3-secret.yaml"
+)
 
 # Replace the "value:" line that follows a JSON6902 "path: <json_path>" entry.
 replace_json6902_value() {
@@ -232,7 +232,6 @@ echo "    Done."
 echo ""
 echo "------------------------------------------"
 echo "[Hub S3 Secret / lab]"
-echo "  File:                  ${HUB_S3_SECRET_FILE}"
 echo "  name:                  ${HUB_S3_SECRET}"
 echo "  s3-access-key-id:      ${S3_ACCESS_KEY_ID}"
 echo "  s3-secret-access-key:  ***"
@@ -240,27 +239,42 @@ echo "  s3-bucket-name:        ${S3_BUCKET_NAME}"
 echo "  s3-region:             ${S3_REGION}"
 echo "  s3-endpoint:           ${S3_ENDPOINT}"
 echo "------------------------------------------"
-backup_file "${HUB_S3_SECRET_FILE}"
-replace_yaml_key "${HUB_S3_SECRET_FILE}" "name" "${HUB_S3_SECRET}"
-echo "    Updated metadata.name → ${HUB_S3_SECRET}"
-replace_yaml_key "${HUB_S3_SECRET_FILE}" "s3-access-key-id" "${S3_ACCESS_KEY_ID}"
-echo "    Updated s3-access-key-id → ${S3_ACCESS_KEY_ID}"
-replace_yaml_key "${HUB_S3_SECRET_FILE}" "s3-secret-access-key" "${S3_SECRET_ACCESS_KEY}"
-echo "    Updated s3-secret-access-key → ***"
-replace_yaml_key "${HUB_S3_SECRET_FILE}" "s3-bucket-name" "${S3_BUCKET_NAME}"
-echo "    Updated s3-bucket-name → ${S3_BUCKET_NAME}"
-replace_yaml_key "${HUB_S3_SECRET_FILE}" "s3-region" "${S3_REGION}"
-echo "    Updated s3-region → ${S3_REGION}"
-replace_yaml_key "${HUB_S3_SECRET_FILE}" "s3-endpoint" "${S3_ENDPOINT}"
-echo "    Updated s3-endpoint → ${S3_ENDPOINT}"
+for HUB_S3_SECRET_FILE in "${HUB_S3_SECRET_FILES[@]}"; do
+  echo "  File: ${HUB_S3_SECRET_FILE}"
+  backup_file "${HUB_S3_SECRET_FILE}"
+  replace_yaml_key "${HUB_S3_SECRET_FILE}" "name" "${HUB_S3_SECRET}"
+  replace_yaml_key "${HUB_S3_SECRET_FILE}" "s3-access-key-id" "${S3_ACCESS_KEY_ID}"
+  replace_yaml_key "${HUB_S3_SECRET_FILE}" "s3-secret-access-key" "${S3_SECRET_ACCESS_KEY}"
+  replace_yaml_key "${HUB_S3_SECRET_FILE}" "s3-bucket-name" "${S3_BUCKET_NAME}"
+  replace_yaml_key "${HUB_S3_SECRET_FILE}" "s3-region" "${S3_REGION}"
+  replace_yaml_key "${HUB_S3_SECRET_FILE}" "s3-endpoint" "${S3_ENDPOINT}"
+  echo "    Updated s3-* keys → ${HUB_S3_SECRET_FILE}"
+done
 echo "    Done."
 
 echo ""
 echo "=========================================="
-echo "Update completed."
+echo "Update completed (overlays patched only — nothing deployed)."
+echo "=========================================="
 echo ""
-echo "Next steps (pick one):"
-echo "  Manual:   oc apply -k operator/overlays/lab/"
-echo "            oc apply -k instance/overlays/lab/"
-echo "  Argo CD:  oc apply -k argoCD/   # then sync apps"
+echo "1) Validate Hub S3 (optional, before AAP deploy)"
+echo "   Remove any previous validate Job first, then create a fresh one:"
+echo "     oc delete job aap-s3-validate -n s4 --ignore-not-found"
+echo "     oc apply -k s3-validate/overlays/lab/"
+echo "     oc wait -n s4 job/aap-s3-validate --for=condition=complete --timeout=180s"
+echo "     oc logs -n s4 job/aap-s3-validate"
+echo "   Pass = logs end with: S3 validation PASSED"
+echo ""
+echo "2) Remove S3 validation resources when finished testing"
+echo "     oc delete job aap-s3-validate -n s4 --ignore-not-found"
+echo "     oc delete configmap aap-s3-validate-script -n s4 --ignore-not-found"
+echo "     oc delete secret aap-hub-s3 -n s4 --ignore-not-found"
+echo ""
+echo "3) Deploy AAP (after S3 validates, or skip S3 if Hub stays disabled)"
+echo "   Manual:"
+echo "     oc apply -k operator/overlays/lab/"
+echo "     # wait for CSV Succeeded, then:"
+echo "     oc apply -k instance/overlays/lab/"
+echo "   Argo CD (operator + instance only; does not include s3-validate):"
+echo "     oc apply -k argoCD/"
 echo "=========================================="

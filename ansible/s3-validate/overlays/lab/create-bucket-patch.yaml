@@ -1,0 +1,4 @@
+# Lab: allow the validate Job to create the Hub bucket if it is missing.
+- op: replace
+  path: /spec/template/spec/containers/0/env/2/value
+  value: "true"

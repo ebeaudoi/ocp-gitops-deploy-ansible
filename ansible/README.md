@@ -40,6 +40,39 @@ S3_ENDPOINT="https://minio.example/"   # S3-compatible
 Then run `./update-values.sh`. That patches `instance/overlays/lab/hub-s3-secret.yaml`
 (all `s3-*` keys) and the CR `object_storage_s3_secret` name. Do not commit real credentials.
 
+**Validate S3 before deploy**
+
+CLI (reads `update-values.sh`):
+
+```bash
+cd ansible
+./validate-s3.sh                              # in-cluster probe
+./validate-s3.sh --create-bucket              # create bucket if missing
+./validate-s3.sh --local --no-verify-ssl      # route HTTPS + skip TLS verify
+```
+
+OpenShift Job (uses `hub-s3-secret.yaml` values; not part of `argoCD/`):
+
+```bash
+# After ./update-values.sh so hub-s3-secret.yaml is current:
+# Always delete a previous Job before re-running (Jobs are immutable).
+oc delete job aap-s3-validate -n s4 --ignore-not-found
+oc apply -k s3-validate/overlays/lab/
+oc wait -n s4 job/aap-s3-validate --for=condition=complete --timeout=180s
+oc logs -n s4 job/aap-s3-validate
+```
+
+- **Pass:** Job `Complete` and logs contain `S3 validation PASSED`
+- **Fail:** Job `Failed` / logs contain `FAIL:`
+
+Remove S3 validation when done:
+
+```bash
+oc delete job aap-s3-validate -n s4 --ignore-not-found
+oc delete configmap aap-s3-validate-script -n s4 --ignore-not-found
+oc delete secret aap-hub-s3 -n s4 --ignore-not-found
+```
+
 ## What each folder does
 
 | Path | Role |
