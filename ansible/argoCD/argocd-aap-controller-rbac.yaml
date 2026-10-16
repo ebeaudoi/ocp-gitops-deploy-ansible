@@ -1,4 +1,5 @@
-# Grant OpenShift GitOps application-controller permission to manage AAP CRs.
+# Grant OpenShift GitOps application-controller permission to manage AAP CRs
+# and Hub S3 Secret in ansible-automation-platform.
 # Namespace admin does not cover aap.ansible.com unless aggregated into admin.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -20,6 +21,40 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: openshift-gitops-argocd-aap
+subjects:
+  - kind: ServiceAccount
+    name: openshift-gitops-argocd-application-controller
+    namespace: openshift-gitops
+---
+# Instance overlay includes hub-s3-secret.yaml; controller needs Secret create/update.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: openshift-gitops-argocd-aap-secrets
+  namespace: ansible-automation-platform
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openshift-gitops-argocd-aap-secrets
+  namespace: ansible-automation-platform
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: openshift-gitops-argocd-aap-secrets
 subjects:
   - kind: ServiceAccount
     name: openshift-gitops-argocd-application-controller
